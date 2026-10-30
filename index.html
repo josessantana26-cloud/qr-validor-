@@ -3,25 +3,39 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Validador</title>
 <style>
-body{font-family:-apple-system,sans-serif;display:flex;align-items:center;
-justify-content:center;height:100vh;margin:0;color:#fff;
-font-size:2.2rem;font-weight:700;text-align:center;background:#555}
+body{font-family:-apple-system,sans-serif;display:flex;flex-direction:column;
+align-items:center;justify-content:center;height:100vh;margin:0;color:#fff;
+text-align:center;background:#555}
+#r{font-size:2.2rem;font-weight:700}
+#d{font-size:.8rem;margin-top:16px;opacity:.85;padding:0 20px;word-break:break-word}
 </style></head>
-<body><div id="r">Validando…</div>
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm'
-const sb = createClient('https://jwxxjprovqacakvtymfo.supabase.co','sb_publishable_AUzpm_S16RzLK8fk25RrPw_7M5W0GEk')
-const code = new URLSearchParams(location.search).get('c')
-let res = 'invalido'
-try {
-  const { data, error } = await sb.rpc('validar_qr',{ p_code: code })
-  if (!error && data) res = data
-} catch(e) {}
-const m = {
-  valido:['✅ VÁLIDO','#1a9d4b'],
-  utilizado:['⚠️ YA UTILIZADO','#e08a00'],
-  invalido:['❌ INVÁLIDO','#d62f2f']
-}[res] || ['❌ INVÁLIDO','#d62f2f']
-document.getElementById('r').textContent = m[0]
-document.body.style.background = m[1]
+<body><div id="r">Validando…</div><div id="d"></div>
+<script>
+const URL_SB='https://jwxxjprovqacakvtymfo.supabase.co'
+const KEY='sb_publishable_AUzpm_S16RzLK8fk25RrPw_7M5W0GEk'
+const code=new URLSearchParams(location.search).get('c')
+async function go(){
+  let res='invalido', detail=''
+  if(!code){ detail='Sin codigo en el enlace' }
+  else{
+    try{
+      const r=await fetch(URL_SB+'/rest/v1/rpc/validar_qr',{
+        method:'POST',
+        headers:{'apikey':KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({p_code:code})
+      })
+      const t=await r.text()
+      if(r.ok){ res=JSON.parse(t) } else { detail='Error '+r.status+': '+t }
+    }catch(e){ detail='Fallo de red: '+e.message }
+  }
+  const m={
+    valido:['✅ VÁLIDO','#1a9d4b'],
+    utilizado:['⚠️ YA UTILIZADO','#e08a00'],
+    invalido:['❌ INVÁLIDO','#d62f2f']
+  }[res]||['❌ INVÁLIDO','#d62f2f']
+  document.getElementById('r').textContent=m[0]
+  document.getElementById('d').textContent=detail
+  document.body.style.background=m[1]
+}
+go()
 </script></body></html>
